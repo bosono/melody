@@ -3,33 +3,593 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Bosono × Melody — Reporty</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>Melody Mall — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f4f8;color:#1e293b;font-size:14px}
+.header{background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);color:white;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header h1{font-size:18px;font-weight:700}
+.header .sub{font-size:12px;opacity:.7;margin-top:2px}
+.tabs{background:white;border-bottom:1px solid #e5e7eb;padding:0 28px;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;align-items:center;gap:0}
+.tabs button{padding:13px 18px;border:none;background:none;font-size:13px;color:#6b7280;cursor:pointer;border-bottom:3px solid transparent;font-weight:500;transition:all .15s;white-space:nowrap}
+.tabs button.active{color:#2563eb;border-bottom-color:#2563eb;font-weight:600}
+.tabs button:hover{color:#374151}
+/* Date filter bar */
+.filter-bar{background:white;border-bottom:1px solid #e5e7eb;padding:10px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-bar label{font-size:12px;color:#6b7280;font-weight:500}
+.filter-bar input[type=date]{border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:13px;color:#374151}
+.filter-bar input[type=date]:focus{outline:none;border-color:#2563eb}
+.preset-btn{background:#f1f5f9;border:none;padding:5px 12px;border-radius:6px;font-size:12px;color:#374151;cursor:pointer;font-weight:500}
+.preset-btn:hover{background:#e2e8f0}
+.preset-btn.active{background:#eff6ff;color:#2563eb}
+#loadingBar{background:#2563eb;color:white;text-align:center;font-size:12px;padding:6px;display:none}
+.container{max-width:1280px;margin:0 auto;padding:20px}
+.page{display:none}.page.active{display:block}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;margin-bottom:18px}
+.card{background:white;border-radius:12px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card h2{font-size:13px;font-weight:600;color:#374151;margin-bottom:12px}
+.stat{background:white;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:4px}
+.stat .val{font-size:22px;font-weight:700;line-height:1.2}
+.stat .hint{font-size:11px;color:#94a3b8;margin-top:2px}
+.stat.blue{border-left:4px solid #3b82f6}.stat.green{border-left:4px solid #10b981}
+.stat.purple{border-left:4px solid #8b5cf6}.stat.orange{border-left:4px solid #f59e0b}
+.stat.red{border-left:4px solid #ef4444}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;padding:8px 10px;text-align:left;border-bottom:1px solid #e5e7eb;white-space:nowrap}
+tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+tbody tr:hover{background:#f8fafc}
+td{padding:8px 10px;font-size:13px}
+tfoot td{padding:9px 10px;font-weight:700;border-top:2px solid #e5e7eb;background:#f8fafc}
+.right{text-align:right}.bold{font-weight:600}.light{color:#94a3b8}.money{font-weight:600}
+.pc{display:inline-block;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:4px;font-family:monospace}
+.bosono-row{background:#eff6ff!important;font-weight:600}
+.badge-my{background:#2563eb;color:white;font-size:9px;padding:1px 6px;border-radius:8px;margin-left:3px;font-weight:700}
+.bar-bg{background:#e5e7eb;border-radius:3px;height:5px;margin-top:3px}
+.bar-fill{background:#3b82f6;border-radius:3px;height:5px}
+.pct{font-size:10px;color:#94a3b8;text-align:right;margin-top:1px}
+.detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.detail-hdr h2{font-size:16px;font-weight:700}
+.back-btn{background:#f1f5f9;border:none;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#374151;font-weight:500}
+.back-btn:hover{background:#e2e8f0}
+.detail-btn{background:#eff6ff;border:none;color:#2563eb;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:500}
+.detail-btn:hover{background:#dbeafe}
+.hidden{display:none!important}
+.pmt-badge{display:inline-block;background:#f1f5f9;color:#374151;font-size:11px;padding:2px 8px;border-radius:16px;margin-right:5px;margin-bottom:3px}
+.empty{padding:40px;text-align:center;color:#94a3b8;font-size:13px}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-<div class="max-w-3xl mx-auto px-6 py-12">
-  <div class="flex items-center gap-3 mb-8">
-    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-      <span class="text-white font-bold text-lg">B</span>
-    </div>
-    <div>
-      <h1 class="text-xl font-bold text-gray-900">Bosono × Melody Mall</h1>
-      <p class="text-sm text-gray-400">Interní prodejní reporty</p>
-    </div>
-  </div>
+<body>
 
-  <div class="space-y-3" id="reports">
-    <a href="report_2026_W23.html"
-       class="flex items-center justify-between bg-white rounded-xl px-5 py-4 shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-      <div>
-        <div class="font-semibold text-gray-800">📊 23. týden 2026</div>
-        <div class="text-sm text-gray-400 mt-0.5">1. 6. – 5. 6. 2026 · Všechny prodejny · 29 partnerů</div>
-      </div>
-      <span class="text-blue-500 text-sm font-medium">Otevřít →</span>
-    </a>
-  </div>
+<div id="loadingBar">⏳ Načítám data…</div>
 
-  <p class="text-xs text-gray-300 mt-10 text-center">Bosono s.r.o. · Interní použití</p>
+<div class="header">
+  <div>
+    <h1>🎵 Melody Mall — Dashboard</h1>
+    <div class="sub">Kompletní data všech prodejen a partnerů · Bosono s.r.o.</div>
+  </div>
+  <div id="lastUpdated" style="font-size:11px;opacity:.6"></div>
 </div>
+
+<div class="filter-bar">
+  <label>Od:</label>
+  <input type="date" id="dateFrom" value="2026-06-01">
+  <label>Do:</label>
+  <input type="date" id="dateTo" value="2026-06-05">
+  <button class="preset-btn" onclick="setPreset('week')">Tento týden</button>
+  <button class="preset-btn" onclick="setPreset('month')">Tento měsíc</button>
+  <button class="preset-btn" onclick="setPreset('lastmonth')">Minulý měsíc</button>
+  <button class="preset-btn" onclick="setPreset('year')">Tento rok</button>
+  <button class="preset-btn" onclick="setPreset('all')">Vše</button>
+  <button onclick="loadData()" style="background:#2563eb;color:white;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-left:4px">Zobrazit →</button>
+</div>
+
+<div class="tabs">
+  <button class="active" onclick="switchTab('prehled',this)">📊 Přehled</button>
+  <button onclick="switchTab('partneri',this)">🤝 Partneři</button>
+  <button onclick="switchTab('prodejny',this)">🏪 Prodejny</button>
+  <button onclick="switchTab('bosono',this)">⭐ Bosono</button>
+</div>
+
+<!-- ===== PŘEHLED ===== -->
+<div id="tab-prehled" class="page active"><div class="container">
+  <div class="grid4">
+    <div class="stat blue"><div class="lbl">Celkový obrat</div><div class="val" id="s-total">—</div><div class="hint">s DPH</div></div>
+    <div class="stat green"><div class="lbl">Prodaných kusů</div><div class="val" id="s-qty">—</div></div>
+    <div class="stat purple"><div class="lbl">Aktivních partnerů</div><div class="val" id="s-partners">—</div></div>
+    <div class="stat orange"><div class="lbl">Průměr / kus</div><div class="val" id="s-avg">—</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>📅 Obrat po dnech</h2><canvas id="c-days" height="90"></canvas></div>
+    <div class="card"><h2>🤝 Top 10 partnerů</h2><canvas id="c-partners" height="200"></canvas></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>🏪 Prodejny — obrat</h2><canvas id="c-stores" height="180"></canvas></div>
+    <div class="card"><h2>📈 Vývoj obratu po měsících</h2><canvas id="c-months" height="180"></canvas></div>
+  </div>
+</div></div>
+
+<!-- ===== PARTNEŘI ===== -->
+<div id="tab-partneri" class="page"><div class="container">
+  <div class="card">
+    <h2>🤝 Všichni partneři — seřazeno dle obratu</h2>
+    <table>
+      <thead><tr><th>Partner</th><th class="right">Obrat s DPH</th><th class="right">Kusů</th><th class="right">Podíl</th><th>Graf</th></tr></thead>
+      <tbody id="t-partners"></tbody>
+      <tfoot><tr><td>CELKEM</td><td class="right money" id="tf-rev">—</td><td class="right" id="tf-qty">—</td><td class="right">100 %</td><td></td></tr></tfoot>
+    </table>
+  </div>
+</div></div>
+
+<!-- ===== PRODEJNY ===== -->
+<div id="tab-prodejny" class="page"><div class="container">
+  <div id="store-list">
+    <div class="card" style="margin-bottom:16px">
+      <h2>🏪 Prodejny — seřazeno dle obratu</h2>
+      <table>
+        <thead><tr><th>Prodejna</th><th class="right">Obrat s DPH</th><th class="right">Kusů</th><th class="right">Podíl</th><th></th></tr></thead>
+        <tbody id="t-stores"></tbody>
+        <tfoot><tr><td>CELKEM</td><td class="right money" id="tf-store-rev">—</td><td class="right" id="tf-store-qty">—</td><td class="right">100 %</td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card"><h2>📊 Srovnání prodejen</h2><canvas id="c-stores2" height="60"></canvas></div>
+  </div>
+  <div id="store-detail" class="hidden">
+    <div class="detail-hdr">
+      <button class="back-btn" onclick="showStoreList()">← Zpět</button>
+      <h2 id="store-detail-title">Prodejna</h2>
+    </div>
+    <div class="grid4" id="store-stats" style="margin-bottom:16px"></div>
+    <div class="grid2">
+      <div class="card"><h2>📅 Po dnech</h2><canvas id="c-store-days" height="100"></canvas></div>
+      <div class="card"><h2>🤝 Partneři na prodejně</h2><canvas id="c-store-partners" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>🤝 Partneři — tabulka</h2>
+      <table><thead><tr><th>Partner</th><th class="right">Obrat</th><th class="right">Ks</th><th class="right">Podíl</th></tr></thead>
+      <tbody id="t-store-partners"></tbody></table>
+    </div>
+  </div>
+</div></div>
+
+<!-- ===== BOSONO ===== -->
+<div id="tab-bosono" class="page"><div class="container">
+  <div class="grid4" style="margin-bottom:18px">
+    <div class="stat blue"><div class="lbl">Bosono obrat</div><div class="val" id="b-rev">—</div></div>
+    <div class="stat green"><div class="lbl">Bosono kusů</div><div class="val" id="b-qty">—</div></div>
+    <div class="stat purple"><div class="lbl">Pořadí mezi partnery</div><div class="val" id="b-rank">—</div></div>
+    <div class="stat orange"><div class="lbl">Podíl na obratu</div><div class="val" id="b-share">—</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>📅 Bosono — obrat po dnech</h2><canvas id="c-bosono-days" height="100"></canvas></div>
+    <div class="card"><h2>🏪 Bosono — per prodejna</h2><canvas id="c-bosono-stores" height="200"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>🤝 Bosono vs. ostatní partneři</h2>
+    <table>
+      <thead><tr><th>#</th><th>Partner</th><th class="right">Obrat s DPH</th><th class="right">Kusů</th><th class="right">Podíl</th><th>Graf</th></tr></thead>
+      <tbody id="t-bosono-rank"></tbody>
+    </table>
+  </div>
+</div></div>
+
+<script>
+// ===== KONFIGURACE =====
+const PARTNERS = {
+  '101':'KULINA Group','104':'Růžový slon','107':'Dermacol',
+  '109':'Sidonia Medica','112':'K+L NET','114':'ForCamping',
+  '117':'Angry Beards','119':'PePe Hair Beauty','120':'RAJ HOLDING',
+  '121':'Lavatronic','129':'Direct China Trade','134':'Elibro',
+  '135':'BENEŠ a LÁT','141':'Tvrzenaskla.eu','142':'BURIMEX',
+  '143':'SpokojenyPes.cz','144':'Friendly Stores','145':'bosono s.r.o.',
+  '146':'Sapelo E-commerce','147':'AROMATICA CZ','148':'OLYMPTOY',
+  '149':'Vasky trade','152':'Textilomanie','153':'Zdravy Batoh',
+  '157':'WAYTOY','159':'NORTHMAN','161':'BOHEMIA GLOVES','162':'MTBIKER',
+  '991':'Pikito a.s.',
+};
+const STORES = {
+  '901':'Praha Štěrboholy','902':'Bratislava Danubia','903':'Rumunsko LemonPark',
+  '904':'Praha Holešovice','905':'Bratislava OC Central','906':'Brno',
+  '907':'Ostrava','908':'Praha Stromovka',
+};
+const COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#a855f7'];
+const BOSONO = '145';
+
+// ===== STATE =====
+let allData = {}; // { 'YYYY-MM-DD': { partnerCode: { storeCode: [rev, qty] } } }
+let charts = {};
+let loadedMonths = new Set();
+
+// ===== UTILS =====
+function fmt(v) { return Math.round(v).toLocaleString('cs-CZ') + ' Kč'; }
+function fmtN(v) { return Math.round(v).toLocaleString('cs-CZ'); }
+function pName(pc) {
+  const name = PARTNERS[pc] || pc;
+  const badge = pc === BOSONO ? ' <span class="badge-my">MY</span>' : '';
+  return `<span class="pc">${pc}</span>${name}${badge}`;
+}
+function sName(sc) { return STORES[sc] || `Prodejna ${sc}`; }
+function dateRange() {
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  return { from, to };
+}
+function monthsBetween(from, to) {
+  const months = [];
+  let d = new Date(from.slice(0,7) + '-01');
+  const end = new Date(to.slice(0,7) + '-01');
+  while (d <= end) {
+    months.push(d.toISOString().slice(0,7));
+    d.setMonth(d.getMonth() + 1);
+  }
+  return months;
+}
+
+// ===== PRESETS =====
+function setPreset(p) {
+  const today = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  let from, to = iso(today);
+  if (p === 'week') {
+    const d = new Date(today); d.setDate(d.getDate() - d.getDay() + 1);
+    from = iso(d);
+  } else if (p === 'month') {
+    from = `${today.getFullYear()}-${pad(today.getMonth()+1)}-01`;
+  } else if (p === 'lastmonth') {
+    const d = new Date(today.getFullYear(), today.getMonth(), 0);
+    to = iso(d);
+    from = `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
+  } else if (p === 'year') {
+    from = `${today.getFullYear()}-01-01`;
+  } else if (p === 'all') {
+    from = '2022-07-01';
+  }
+  document.getElementById('dateFrom').value = from;
+  document.getElementById('dateTo').value = to;
+  loadData();
+}
+
+// ===== NAČÍTÁNÍ DAT =====
+async function loadData() {
+  const { from, to } = dateRange();
+  const months = monthsBetween(from, to);
+  document.getElementById('loadingBar').style.display = 'block';
+
+  for (const m of months) {
+    if (loadedMonths.has(m)) continue;
+    try {
+      const resp = await fetch(`data/${m}.json`);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      // Merge into allData
+      for (const [day, partners] of Object.entries(data)) {
+        allData[day] = partners;
+      }
+      loadedMonths.add(m);
+    } catch(e) { /* month file not found, skip */ }
+  }
+
+  document.getElementById('loadingBar').style.display = 'none';
+  document.getElementById('lastUpdated').textContent = `Aktualizováno: ${new Date().toLocaleString('cs-CZ')}`;
+  renderAll();
+}
+
+// ===== FILTROVÁNÍ =====
+function filteredDays() {
+  const { from, to } = dateRange();
+  return Object.keys(allData).filter(d => d >= from && d <= to).sort();
+}
+
+function aggregate(days) {
+  // Returns: { byPartner: {pc: {rev, qty}}, byStore: {sc: {rev,qty}}, byDay: {day: {rev,qty}}, total: {rev,qty} }
+  const byPartner = {}, byStore = {}, byDay = {};
+  let totalRev = 0, totalQty = 0;
+  for (const day of days) {
+    const partners = allData[day] || {};
+    let dayRev = 0, dayQty = 0;
+    for (const [pc, stores] of Object.entries(partners)) {
+      for (const [sc, [rev, qty]] of Object.entries(stores)) {
+        if (!byPartner[pc]) byPartner[pc] = {rev:0,qty:0};
+        byPartner[pc].rev += rev; byPartner[pc].qty += qty;
+        if (!byStore[sc]) byStore[sc] = {rev:0,qty:0};
+        byStore[sc].rev += rev; byStore[sc].qty += qty;
+        totalRev += rev; totalQty += qty;
+        dayRev += rev; dayQty += qty;
+      }
+    }
+    byDay[day] = {rev: dayRev, qty: dayQty};
+  }
+  return { byPartner, byStore, byDay, total: {rev:totalRev, qty:totalQty} };
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+// ===== RENDER VŠEHO =====
+function renderAll() {
+  const days = filteredDays();
+  const agg  = aggregate(days);
+  renderPrehled(days, agg);
+  renderPartneri(agg);
+  renderProdejny(days, agg);
+  renderBosono(days, agg);
+}
+
+// ===== PŘEHLED =====
+function renderPrehled(days, agg) {
+  const { byPartner, byStore, byDay, total } = agg;
+  document.getElementById('s-total').textContent = fmt(total.rev);
+  document.getElementById('s-qty').textContent = fmtN(total.qty);
+  document.getElementById('s-partners').textContent = Object.keys(byPartner).length;
+  document.getElementById('s-avg').textContent = total.qty > 0 ? fmt(total.rev / total.qty) : '—';
+
+  // Days chart
+  destroyChart('days');
+  charts['days'] = new Chart(document.getElementById('c-days'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => d.slice(5)),
+      datasets: [{
+        label: 'Obrat (Kč)', data: days.map(d => Math.round(byDay[d]?.rev||0)),
+        backgroundColor: 'rgba(37,99,235,0.7)', borderRadius: 3, yAxisID: 'y'
+      }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}},
+      scales:{ y:{ticks:{callback:v=>v.toLocaleString('cs-CZ')+' Kč',font:{size:10}}} } }
+  });
+
+  // Partners donut
+  const pSorted = Object.entries(byPartner).sort((a,b)=>b[1].rev-a[1].rev).slice(0,10);
+  destroyChart('partners');
+  charts['partners'] = new Chart(document.getElementById('c-partners'), {
+    type: 'doughnut',
+    data: {
+      labels: pSorted.map(([pc]) => (PARTNERS[pc]||pc) + (pc===BOSONO?' ★':'')),
+      datasets: [{ data: pSorted.map(([,d])=>Math.round(d.rev)), backgroundColor: COLORS, borderWidth:2, borderColor:'#fff' }]
+    },
+    options: { responsive:true, plugins:{
+      legend:{position:'bottom',labels:{font:{size:10},padding:8}},
+      tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toLocaleString('cs-CZ')+' Kč'}}
+    }}
+  });
+
+  // Stores bar
+  const sSorted = Object.entries(byStore).sort((a,b)=>b[1].rev-a[1].rev);
+  destroyChart('stores');
+  charts['stores'] = new Chart(document.getElementById('c-stores'), {
+    type: 'bar',
+    data: {
+      labels: sSorted.map(([sc])=>sName(sc)),
+      datasets: [{ label:'Obrat', data: sSorted.map(([,d])=>Math.round(d.rev)),
+        backgroundColor: sSorted.map((_,i)=>COLORS[i%COLORS.length]), borderRadius:5 }]
+    },
+    options: { indexAxis:'y', responsive:true, plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>v.toLocaleString('cs-CZ')+' Kč',font:{size:10}}}} }
+  });
+
+  // Monthly trend
+  const monthlyRev = {};
+  for (const [day, d] of Object.entries(byDay)) {
+    const m = day.slice(0,7);
+    monthlyRev[m] = (monthlyRev[m]||0) + d.rev;
+  }
+  const mSorted = Object.entries(monthlyRev).sort();
+  destroyChart('months');
+  charts['months'] = new Chart(document.getElementById('c-months'), {
+    type: 'line',
+    data: {
+      labels: mSorted.map(([m])=>m),
+      datasets: [{ label:'Obrat', data: mSorted.map(([,v])=>Math.round(v)),
+        borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.08)',
+        fill:true, tension:0.4, pointRadius:3 }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k Kč',font:{size:10}}}} }
+  });
+}
+
+// ===== PARTNEŘI =====
+function renderPartneri(agg) {
+  const { byPartner, total } = agg;
+  const sorted = Object.entries(byPartner).sort((a,b)=>b[1].rev-a[1].rev);
+  const maxRev = sorted[0]?.[1].rev || 1;
+  let html = '';
+  sorted.forEach(([pc,d]) => {
+    const pct = d.rev/total.rev*100;
+    const hl = pc===BOSONO ? ' class="bosono-row"' : '';
+    html += `<tr${hl}><td>${pName(pc)}</td>
+      <td class="right money">${fmt(d.rev)}</td>
+      <td class="right">${fmtN(d.qty)} ks</td>
+      <td class="right">${pct.toFixed(1)} %</td>
+      <td style="min-width:80px"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(d.rev/maxRev*100,100).toFixed(1)}%"></div></div></td>
+    </tr>`;
+  });
+  document.getElementById('t-partners').innerHTML = html;
+  document.getElementById('tf-rev').textContent = fmt(total.rev);
+  document.getElementById('tf-qty').textContent = fmtN(total.qty) + ' ks';
+}
+
+// ===== PRODEJNY =====
+function renderProdejny(days, agg) {
+  const { byStore, total } = agg;
+  const sorted = Object.entries(byStore).sort((a,b)=>b[1].rev-a[1].rev);
+  let html = '';
+  sorted.forEach(([sc,d]) => {
+    const pct = d.rev/total.rev*100;
+    html += `<tr style="cursor:pointer" onclick="showStoreDetail('${sc}')">
+      <td><strong>${sc}</strong> — ${sName(sc)}</td>
+      <td class="right money">${fmt(d.rev)}</td>
+      <td class="right">${fmtN(d.qty)} ks</td>
+      <td class="right">${pct.toFixed(1)} %</td>
+      <td><button class="detail-btn" onclick="event.stopPropagation();showStoreDetail('${sc}')">Detail →</button></td>
+    </tr>`;
+  });
+  document.getElementById('t-stores').innerHTML = html;
+  document.getElementById('tf-store-rev').textContent = fmt(total.rev);
+  document.getElementById('tf-store-qty').textContent = fmtN(total.qty) + ' ks';
+
+  destroyChart('stores2');
+  charts['stores2'] = new Chart(document.getElementById('c-stores2'), {
+    type:'bar',
+    data:{labels:sorted.map(([sc])=>sName(sc)),datasets:[{
+      label:'Obrat',data:sorted.map(([,d])=>Math.round(d.rev)),
+      backgroundColor:sorted.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:5
+    }]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>v.toLocaleString('cs-CZ')+' Kč',font:{size:10}}}}}
+  });
+}
+
+function showStoreDetail(sc) {
+  document.getElementById('store-list').classList.add('hidden');
+  document.getElementById('store-detail').classList.remove('hidden');
+  document.getElementById('store-detail-title').textContent = `🏪 ${sc} — ${sName(sc)}`;
+
+  const { from, to } = dateRange();
+  const days = filteredDays();
+  // Per-store aggregation
+  const byDay = {}, byPartner = {};
+  let totalRev = 0, totalQty = 0;
+  for (const day of days) {
+    const partners = allData[day] || {};
+    let dRev = 0, dQty = 0;
+    for (const [pc, stores] of Object.entries(partners)) {
+      const sv = stores[sc];
+      if (!sv) continue;
+      const [rev, qty] = sv;
+      dRev += rev; dQty += qty; totalRev += rev; totalQty += qty;
+      if (!byPartner[pc]) byPartner[pc] = {rev:0,qty:0};
+      byPartner[pc].rev += rev; byPartner[pc].qty += qty;
+    }
+    if (dRev > 0) byDay[day] = {rev:dRev, qty:dQty};
+  }
+
+  const dDays = Object.keys(byDay).sort();
+  document.getElementById('store-stats').innerHTML = `
+    <div class="stat blue"><div class="lbl">Obrat s DPH</div><div class="val">${fmt(totalRev)}</div></div>
+    <div class="stat green"><div class="lbl">Kusů</div><div class="val">${fmtN(totalQty)}</div></div>
+    <div class="stat purple"><div class="lbl">Partnerů</div><div class="val">${Object.keys(byPartner).length}</div></div>
+    <div class="stat orange"><div class="lbl">Prům./kus</div><div class="val">${totalQty>0?fmt(totalRev/totalQty):'—'}</div></div>
+  `;
+
+  destroyChart('store-days'); destroyChart('store-partners');
+  charts['store-days'] = new Chart(document.getElementById('c-store-days'), {
+    type:'bar', data:{labels:dDays.map(d=>d.slice(5)),datasets:[{
+      label:'Obrat',data:dDays.map(d=>Math.round(byDay[d]?.rev||0)),
+      backgroundColor:'rgba(37,99,235,0.7)',borderRadius:3
+    }]},
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v.toLocaleString('cs-CZ')+' Kč',font:{size:10}}}}}
+  });
+
+  const pSorted = Object.entries(byPartner).sort((a,b)=>b[1].rev-a[1].rev);
+  charts['store-partners'] = new Chart(document.getElementById('c-store-partners'), {
+    type:'doughnut',
+    data:{labels:pSorted.map(([pc])=>(PARTNERS[pc]||pc)+(pc===BOSONO?' ★':'')),
+      datasets:[{data:pSorted.map(([,d])=>Math.round(d.rev)),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:8}},
+      tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toLocaleString('cs-CZ')+' Kč'}}}}
+  });
+
+  let ptHtml = '';
+  pSorted.forEach(([pc,d]) => {
+    const hl = pc===BOSONO?' class="bosono-row"':'';
+    ptHtml += `<tr${hl}><td>${pName(pc)}</td><td class="right money">${fmt(d.rev)}</td><td class="right">${fmtN(d.qty)} ks</td><td class="right light">${(d.rev/totalRev*100).toFixed(1)} %</td></tr>`;
+  });
+  document.getElementById('t-store-partners').innerHTML = ptHtml;
+}
+
+function showStoreList() {
+  document.getElementById('store-detail').classList.add('hidden');
+  document.getElementById('store-list').classList.remove('hidden');
+}
+
+// ===== BOSONO =====
+function renderBosono(days, agg) {
+  const { byPartner, byDay, total } = agg;
+  const bRev = byPartner[BOSONO]?.rev || 0;
+  const bQty = byPartner[BOSONO]?.qty || 0;
+  const sorted = Object.entries(byPartner).sort((a,b)=>b[1].rev-a[1].rev);
+  const rank = sorted.findIndex(([pc])=>pc===BOSONO) + 1;
+
+  document.getElementById('b-rev').textContent = fmt(bRev);
+  document.getElementById('b-qty').textContent = fmtN(bQty) + ' ks';
+  document.getElementById('b-rank').textContent = rank > 0 ? `${rank}. místo` : '—';
+  document.getElementById('b-share').textContent = total.rev > 0 ? (bRev/total.rev*100).toFixed(1)+' %' : '—';
+
+  // Bosono per day
+  const bByDay = {};
+  for (const day of days) {
+    const partners = allData[day] || {};
+    const stores = partners[BOSONO] || {};
+    let rev = 0, qty = 0;
+    for (const [rev2, qty2] of Object.values(stores)) { rev += rev2; qty += qty2; }
+    bByDay[day] = {rev, qty};
+  }
+
+  destroyChart('bosono-days');
+  charts['bosono-days'] = new Chart(document.getElementById('c-bosono-days'), {
+    type:'bar', data:{labels:days.map(d=>d.slice(5)),datasets:[{
+      label:'Bosono obrat',data:days.map(d=>Math.round(bByDay[d]?.rev||0)),
+      backgroundColor:'rgba(37,99,235,0.8)',borderRadius:3
+    }]},
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v.toLocaleString('cs-CZ')+' Kč',font:{size:10}}}}}
+  });
+
+  // Bosono per store
+  const bByStore = {};
+  for (const day of days) {
+    const stores = (allData[day]||{})[BOSONO] || {};
+    for (const [sc,[rev,qty]] of Object.entries(stores)) {
+      if (!bByStore[sc]) bByStore[sc]={rev:0,qty:0};
+      bByStore[sc].rev+=rev; bByStore[sc].qty+=qty;
+    }
+  }
+  const bsSorted = Object.entries(bByStore).sort((a,b)=>b[1].rev-a[1].rev);
+  destroyChart('bosono-stores');
+  charts['bosono-stores'] = new Chart(document.getElementById('c-bosono-stores'), {
+    type:'doughnut',
+    data:{labels:bsSorted.map(([sc])=>sName(sc)),
+      datasets:[{data:bsSorted.map(([,d])=>Math.round(d.rev)),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:8}},
+      tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toLocaleString('cs-CZ')+' Kč'}}}}
+  });
+
+  // Ranking table
+  let rankHtml = '';
+  sorted.forEach(([pc,d],i) => {
+    const hl = pc===BOSONO?' class="bosono-row"':'';
+    const pct = d.rev/total.rev*100;
+    rankHtml += `<tr${hl}>
+      <td class="light" style="text-align:center;width:32px">${i+1}</td>
+      <td>${pName(pc)}</td>
+      <td class="right money">${fmt(d.rev)}</td>
+      <td class="right">${fmtN(d.qty)} ks</td>
+      <td class="right">${pct.toFixed(1)} %</td>
+      <td style="min-width:80px"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(d.rev/(sorted[0][1].rev)*100,100).toFixed(1)}%"></div></div></td>
+    </tr>`;
+  });
+  document.getElementById('t-bosono-rank').innerHTML = rankHtml;
+}
+
+// ===== TABS =====
+function switchTab(tab, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', () => {
+  // Nastav default: tento týden
+  setPreset('week');
+});
+</script>
 </body>
 </html>
